@@ -14,7 +14,7 @@ maze_actions = {
 }
 
 def parse_topology(topology):
-    return np.array([list(row) for row in topology])
+    return np.array([[list(col) for col in row] for row in topology])
 
 
 class Maze(object):
@@ -30,7 +30,7 @@ class Maze(object):
         return 0 <= position < np.product(self.shape)
 
     def in_bounds_unflat(self, position):
-        return 0 <= position[0] < self.shape[0] and 0 <= position[1] < self.shape[1]
+        return 0 <= position[0] < self.shape[0] and 0 <= position[1] < self.shape[1] and 0 <= position[2] < self.shape[2]
 
     def get_flat(self, position):
         if not self.in_bounds_flat(position):
@@ -74,6 +74,7 @@ def move_avoiding_walls(maze, position, action):
     if not maze.in_bounds_unflat(new_position) or maze.get_unflat(new_position) == '#':
         return position, 'hit-wall'
 
+    # Go to the elevator
     if maze.get_unflat(new_position) == '%':
         return 
 
@@ -132,20 +133,20 @@ class GridWorld(object):
      'o': origin
     """
 
-    def __init__(self, maze, rewards={'*': 10}, terminal_markers='*', action_error_prob=0, random_state=None, directions="NSEW"):
+    def __init__(self, maze, rewards={'*': 10}, terminal_markers='*', action_error_prob=0, random_state=None, directions="NSEWK"):
 
         self.maze = Maze(maze) if not isinstance(maze, Maze) else maze
         self.rewards = rewards
         self.terminal_markers = terminal_markers
         self.action_error_prob = action_error_prob
         self.random_state = check_random_state(random_state)
-        self.people = np.randint(low = (0, 0), high = (self.maze.shape[0], self.maze.shape[1]), size=3)
+        self.people_position = np.randint(low = (0, 0), high = (self.maze.shape[0], self.maze.shape[1]), size=3)
 
         self.actions = [maze_actions[direction] for direction in directions]
         self.num_actions = len(self.actions)
         self.state = None
         self.reset()
-        self.num_states = self.maze.shape[0] * self.maze.shape[1]
+        self.num_states = self.maze.shape[0] * self.maze.shape[1] * self.maze.shape[2]
 
     def __repr__(self):
         return 'GridWorld(maze={maze!r}, rewards={rewards}, terminal_markers={terminal_markers}, action_error_prob={action_error_prob})'.format(**self.__dict__)
@@ -257,6 +258,29 @@ class GridWorld(object):
             '#######.#',
             '#o......#',
             '#########']
+
+        'Two level': [
+            [
+            '#########',
+            '#......%#',
+            '#.......#',
+            '#..#....#',
+            '#..#....#',
+            '#.......#',
+            '##......#',
+            '#o......#',
+            '#########'],
+            [
+            '#########',
+            '#......%#',
+            '#.......#',
+            '#..#....#',
+            '#..#....#',
+            '#.......#',
+            '##......#',
+            '#*......#',
+            '#########']
+        ]
     }
 
 

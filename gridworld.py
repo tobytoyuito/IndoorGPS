@@ -61,7 +61,7 @@ class Maze(object):
         return 'Maze({})'.format(repr(self.topology.tolist()))
 
 #***********************************************************************
-def move_avoiding_walls(maze, position, action):
+def move_avoiding_walls(maze, position, action, people):
     """
     Return the new position after moving, and the event that happened ('hit-wall' or 'moved').
 
@@ -75,7 +75,10 @@ def move_avoiding_walls(maze, position, action):
         return position, 'hit-wall'
 
     if maze.get_unflat(new_position) == '%':
-        return 
+        return
+
+    if maze.get_unflat(new_position) == 'P':
+        return position, 'runinto-people'
 
     return new_position, 'moved'
 

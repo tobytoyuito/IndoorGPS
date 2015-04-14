@@ -10,6 +10,7 @@ maze_actions = {
     'S': np.array([1, 0]),
     'E': np.array([0, 1]),
     'W': np.array([0, -1]),
+    'K': np.array([0, 0])
 }
 
 def parse_topology(topology):
@@ -59,7 +60,7 @@ class Maze(object):
     def __repr__(self):
         return 'Maze({})'.format(repr(self.topology.tolist()))
 
-
+#***********************************************************************
 def move_avoiding_walls(maze, position, action):
     """
     Return the new position after moving, and the event that happened ('hit-wall' or 'moved').
@@ -73,7 +74,22 @@ def move_avoiding_walls(maze, position, action):
     if not maze.in_bounds_unflat(new_position) or maze.get_unflat(new_position) == '#':
         return position, 'hit-wall'
 
+    if maze.get_unflat(new_position) == '%':
+        return 
+
     return new_position, 'moved'
+
+
+def move_adversary(maze, position, action):
+    """
+    Return the new position of one adversary.
+
+    Works with the positon and action as a (row, column) array.
+    """
+
+    return None
+#***********************************************************************
+
 
 
 
@@ -123,6 +139,7 @@ class GridWorld(object):
         self.terminal_markers = terminal_markers
         self.action_error_prob = action_error_prob
         self.random_state = check_random_state(random_state)
+        self.people = np.randint(low = (0, 0), high = (self.maze.shape[0], self.maze.shape[1]), size=3)
 
         self.actions = [maze_actions[direction] for direction in directions]
         self.num_actions = len(self.actions)
@@ -166,6 +183,10 @@ class GridWorld(object):
 
         reward = self.rewards.get(self.maze.get_flat(self.state), 0) + self.rewards.get(result, 0)
         return self.observe(), reward
+
+    def move_
+
+
 
     def as_mdp(self):
         transition_probabilities = np.zeros((self.num_states, self.num_actions, self.num_states))

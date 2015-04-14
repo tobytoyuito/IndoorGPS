@@ -80,7 +80,7 @@ def move_avoiding_walls(maze, position, action, people):
 
     # GO to people
     if maze.get_unflat(new_position) == 'P':
-        return position, 'runinto-people~~~~~~~~~~~~~~'
+        return position, 'runinto-people'
 
     return new_position, 'moved'
 

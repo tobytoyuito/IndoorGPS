@@ -6,11 +6,11 @@ from ..utils import check_random_state
 
 # Possible actions, expressed as (delta-y, delta-x).
 maze_actions = {
-    'N': np.array([-1, 0]),
-    'S': np.array([1, 0]),
-    'E': np.array([0, 1]),
-    'W': np.array([0, -1]),
-    'K': np.array([0, 0])
+    'N': np.array([0, -1, 0]),
+    'S': np.array([0, 1, 0]),
+    'E': np.array([0, 0, 1]),
+    'W': np.array([0, 0, -1]),
+    'K': np.array([0, 0, 0])
 }
 
 def parse_topology(topology):
@@ -74,11 +74,11 @@ def move_avoiding_walls(maze, position, action, people):
     if not maze.in_bounds_unflat(new_position) or maze.get_unflat(new_position) == '#':
         return position, 'hit-wall'
 
-    # Go to the elevator
+    # Go to the stairs
     if maze.get_unflat(new_position) == '%':
-        return
+        return [position[0]+1,position[1],position[2]],'stair'
 
-    # GO to people
+    # GO to people and back
     if maze.get_unflat(new_position) == 'P':
         return position, 'runinto-people'
 
@@ -88,11 +88,21 @@ def move_avoiding_walls(maze, position, action, people):
 def move_adversary(maze, position, action):
     """
     Return the new position of one adversary.
-
+    
     Works with the positon and action as a (row, column) array.
     """
+    
+    new_position = position + action
+    
+    # Compute collisions with walls, including implicit walls at the ends of the world.
+    if not maze.in_bounds_unflat(new_position) or maze.get_unflat(new_position) == '#' or maze.get_unflat(new_position) == '%':
+        return position
+      # GO to people and back
+    if maze.get_unflat(new_position) == 'P':
+        return position
+    
+    return new_position
 
-    return None
 #***********************************************************************
 
 

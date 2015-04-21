@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils import check_random_state
+from utils import check_random_state
 
 
 # Maze state is represented as a 2-element NumPy array: (Y, X). Increasing Y is South.
@@ -19,7 +19,7 @@ def parse_topology(topology):
 
 class Maze(object):
     """
-    Simple wrapper around a NumPy 2D array to handle flattened indexing and staying in bounds.
+    Simple wrapper around a NumPy 3D array to handle flattened indexing and staying in bounds.
     """
     def __init__(self, topology):
         self.topology = parse_topology(topology)
@@ -53,15 +53,21 @@ class Maze(object):
 
     def flat_positions_not_containing(self, x):
         return list(np.nonzero(self.flat_topology != x)[0])
+    
+    def flat_change(self, position, element):
+        if not self.in_bounds_flat(position):
+            raise IndexError("Position out of bounds: {}".format(position))
+        self.flat_topology[position] = element
+        self.topology[tuple(self.unflatten_index(position))] = element
 
     def __str__(self):
-        return '\n'.join(''.join(row) for row in self.topology.tolist())
+        return '\n\n'.join('\n'.join(''.join(row) for row in level) for level in self.topology.tolist())
 
     def __repr__(self):
         return 'Maze({})'.format(repr(self.topology.tolist()))
 
 #***********************************************************************
-def move_avoiding_walls(maze, position, action, people):
+def move_avoiding_walls(maze, position, action, climb):
     """
     Return the new position after moving, and the event that happened ('hit-wall' or 'moved').
 
@@ -76,10 +82,12 @@ def move_avoiding_walls(maze, position, action, people):
 
     # Go to the stairs
     if maze.get_unflat(new_position) == '%':
-        return [position[0]+1,position[1],position[2]],'stair'
+        flat_new_position = climb[maze.flatten_index(new_position)]
+        new_position = maze.unflatten_index(flat_new_position)
+        return new_position, 'stair'
 
     # GO to people and back
-    if maze.get_unflat(new_position) == 'P':
+    if maze.get_unflat(new_position) == 'a':
         return position, 'runinto-people'
 
     return new_position, 'moved'
@@ -97,8 +105,9 @@ def move_adversary(maze, position, action):
     # Compute collisions with walls, including implicit walls at the ends of the world.
     if not maze.in_bounds_unflat(new_position) or maze.get_unflat(new_position) == '#' or maze.get_unflat(new_position) == '%':
         return position
-      # GO to people and back
-    if maze.get_unflat(new_position) == 'P':
+    
+    # GO to people and back
+    if maze.get_unflat(new_position) == 'a':
         return position
     
     return new_position
@@ -147,14 +156,26 @@ class GridWorld(object):
      'o': origin
     """
 
-    def __init__(self, maze, rewards={'*': 10}, terminal_markers='*', action_error_prob=0, random_state=None, directions="NSEWK"):
+    def __init__(self, maze, num_advs=3, rewards={'*': 10}, terminal_markers='*', action_error_prob=0, random_state=None, directions="NSEWK"):
 
         self.maze = Maze(maze) if not isinstance(maze, Maze) else maze
         self.rewards = rewards
         self.terminal_markers = terminal_markers
         self.action_error_prob = action_error_prob
         self.random_state = check_random_state(random_state)
-        self.people_position = np.randint(low = (0, 0), high = (self.maze.shape[0], self.maze.shape[1]), size=3)
+        self.num_advs = num_advs
+        
+        # find all available position
+        self.available_state = self.maze.flat_positions_containing('.')
+                
+        # randomly choose position of adversary
+        self.adversaries_position = np.random.choice(self.available_state, replace=False, size=self.num_advs)
+        
+        # find stairs
+        self.stairs = self.maze.flat_positions_containing('%')
+        
+        # dict to upstair or downstair
+        self.climb = {self.stairs[0]:self.stairs[1], self.stairs[1]: self.stairs[0]}
 
         self.actions = [maze_actions[direction] for direction in directions]
         self.num_actions = len(self.actions)
@@ -167,10 +188,11 @@ class GridWorld(object):
 
     def reset(self):
         """
-        Reset the position to a starting position (an 'o'), chosen at random.
+        Reset the position of agent and adversaries to a starting position (an 'o'), chosen at random.
         """
         options = self.maze.flat_positions_containing('o')
         self.state = options[self.random_state.choice(len(options))]
+        self.adversaries_position = np.random.choice(self.available_state, replace=False, size=self.num_advs)
 
     def is_terminal(self, state):
         """Check if the given state is a terminal state."""
@@ -178,28 +200,61 @@ class GridWorld(object):
 
     def observe(self):
         """
-        Return the current state as an integer.
+        Return the current state and position of adversaries as integers.
 
-        The state is the index into the flattened maze.
+        The state and position is the index into the flattened maze.
         """
-        return self.state
+        return self.state, self.adversaries_position
+    
+    def add_adv_maze(self):
+        """
+        Return the gridworld with adversary
+        """
+        tmp = Maze(self.maze.topology)
+        for adver_p in self.adversaries_position:
+            tmp.flat_change(adver_p, 'a')
+    
+        return tmp
+        
+    
+    def visualize(self):
+        """
+        Print the gridworld with adversary and agent
+        """
+        tmp = self.add_adv_maze()
+        tmp.flat_change(self.state, 'I')
+        
+        print str(tmp)
+        
 
     def perform_action(self, action_idx):
         """Perform an action (specified by index), yielding a new state and reward."""
         # In the absorbing end state, nothing does anything.
         if self.is_terminal(self.state):
             return self.observe(), 0
-
+        
+        # move adversary first
+        for idx in xrange(self.num_advs):
+            action_idx_a = self.random_state.choice(self.num_actions)
+            action = self.actions[action_idx_a]
+            new_position = move_adversary(self.add_adv_maze(),
+                                          self.maze.unflatten_index(self.adversaries_position[idx]),
+                                          action)
+            self.adversaries_position[idx] = self.maze.flatten_index(new_position)
+            
+        # move agent
         if self.action_error_prob and self.random_state.rand() < self.action_error_prob:
             action_idx = self.random_state.choice(self.num_actions)
         action = self.actions[action_idx]
-        new_state_tuple, result = move_avoiding_walls(self.maze, self.maze.unflatten_index(self.state), action)
+        new_state_tuple, result = move_avoiding_walls(self.add_adv_maze(), 
+                                                      self.maze.unflatten_index(self.state), 
+                                                      action, self.climb)
         self.state = self.maze.flatten_index(new_state_tuple)
 
         reward = self.rewards.get(self.maze.get_flat(self.state), 0) + self.rewards.get(result, 0)
         return self.observe(), reward
 
-    def move_
+    
 
 
 
@@ -271,9 +326,9 @@ class GridWorld(object):
             '#....*#.#',
             '#######.#',
             '#o......#',
-            '#########']
+            '#########'],
 
-        'Two level': [
+        'two level': [
             [
             '#########',
             '#......%#',

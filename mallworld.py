@@ -172,6 +172,7 @@ class MallWorld(object):
         self.random_state = check_random_state(random_state)
         self.num_advs = num_advs
         self.area = np.product(self.maze.shape[-2:])
+        self.vol = np.product(self.maze.shape)
         
         # find all available position
         self.available_state = self.maze.flat_positions_containing('.')
@@ -226,7 +227,7 @@ class MallWorld(object):
                 adv_temp[i] = pos_dict[(x1-x,y1-y)]
             else: 
                 adv_temp[i] = 0    
-        self.current_situation = self.observe()[0]+162*adv_temp[0]+162*25*adv_temp[1]+162*25*25*adv_temp[2]
+        self.current_situation = self.observe()[0]+self.vol*adv_temp[0]+self.vol*25*adv_temp[1]+self.vol*25*25*adv_temp[2]
         return self.current_situation    
 
     def get_surroundings(self):

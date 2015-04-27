@@ -171,6 +171,7 @@ class MallWorld(object):
         self.action_error_prob = action_error_prob
         self.random_state = check_random_state(random_state)
         self.num_advs = num_advs
+        self.area = np.product(self.maze.shape[-2:])
         
         # find all available position
         self.available_state = self.maze.flat_positions_containing('.')
@@ -182,6 +183,13 @@ class MallWorld(object):
         self.stairs = self.maze.flat_positions_containing('%')
         
         # dict to upstair or downstair
+        self.climb = {}
+        for st in self.stairs:
+            if st-self.area in self.stairs:
+                climb[st] = st-self.area
+            if st+self.area in self.stairs:
+                climb[st] = st+self.area
+
         self.climb = {self.stairs[0]:self.stairs[1], self.stairs[1]: self.stairs[0]}
 
         self.actions = [maze_actions[direction] for direction in directions]
@@ -448,8 +456,29 @@ class MallWorld(object):
             '#.......#',
             '##......#',
             '#*......#',
-            '#########']
-        ]
+            '#########']],
+
+        'two stairs': [
+            [
+            '#########',
+            '#......%#',
+            '#.......#',
+            '#..#....#',
+            '#..#....#',
+            '#.......#',
+            '#.#.....#',
+            '#%#...o.#',
+            '#########'],
+            [
+            '#########',
+            '#......%#',
+            '#..######',
+            '#..#...*#',
+            '#..#....#',
+            '#.......#',
+            '#####...#',
+            '#%......#',
+            '#########']]
     }
 
 

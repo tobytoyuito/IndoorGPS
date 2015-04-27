@@ -186,11 +186,9 @@ class MallWorld(object):
         self.climb = {}
         for st in self.stairs:
             if st-self.area in self.stairs:
-                climb[st] = st-self.area
+                self.climb[st] = st-self.area
             if st+self.area in self.stairs:
-                climb[st] = st+self.area
-
-        self.climb = {self.stairs[0]:self.stairs[1], self.stairs[1]: self.stairs[0]}
+                self.climb[st] = st+self.area
 
         self.actions = [maze_actions[direction] for direction in directions]
         self.num_actions = len(self.actions)
@@ -478,6 +476,38 @@ class MallWorld(object):
             '#.......#',
             '#####...#',
             '#%......#',
+            '#########']],
+
+        'Three stairs': [
+            [
+            '#########',
+            '#......%#',
+            '#.......#',
+            '#..#....#',
+            '#..#....#',
+            '#.......#',
+            '#.#.....#',
+            '#%#...o.#',
+            '#########'],
+            [
+            '#########',
+            '#%.....%#',
+            '#..######',
+            '#..#....#',
+            '#..#....#',
+            '#.......#',
+            '#####...#',
+            '#%.....%#',
+            '#########'],
+            [
+            '#########',
+            '#%......#',
+            '#..######',
+            '#..#...*#',
+            '#..#....#',
+            '#.......#',
+            '#####...#',
+            '#......%#',
             '#########']]
     }
 

@@ -478,7 +478,7 @@ class MallWorld(object):
             '#%......#',
             '#########']],
 
-        'Three stairs': [
+        'Three floors': [
             [
             '#########',
             '#......%#',

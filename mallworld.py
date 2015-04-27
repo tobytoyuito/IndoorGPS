@@ -223,6 +223,19 @@ class MallWorld(object):
         self.current_situation = self.observe()[0]+162*adv_temp[0]+162*25*adv_temp[1]+162*25*25*adv_temp[2]
         return self.current_situation    
 
+    def get_surroundings(self):
+        f,x,y = self.maze.unflatten_index(self.observe()[0])
+        adv_temp = np.zeros((3,1))
+        pos_dict = {(-2,-2): 1, (-2,-1): 2, (-2,0): 3, (-2,1): 4, (-2,2): 5,(-1,-2): 6, (-1,-1): 7, (-1,0): 8, (-1,1): 9, (-1,2): 10,(0,-2): 11, (0,-1): 12, (0,1): 13, (0,2): 14,(1,-2): 15, (1,-1): 16, (1,0): 17, (1,1): 18, (1,2): 19,(2,-2): 20, (2,-1): 21, (2,0): 22, (2,1): 23, (2,2): 24}
+        for i in xrange(3):
+            f1,x1,y1 = self.maze.unflatten_index(self.adversaries_position[i])
+            if(((x1-x,y1-y) in pos_dict)and (f==f1)): 
+                adv_temp[i] = pos_dict[(x1-x,y1-y)]
+            else: 
+                adv_temp[i] = 0    
+        self.current_situation = self.observe()[0]+162*adv_temp[0]+162*25*adv_temp[1]+162*25*25*adv_temp[2]
+        return self.current_situation  
+    
     def observe(self):
         """
         Return the current state and position of adversaries as integers.

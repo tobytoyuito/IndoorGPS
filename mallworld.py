@@ -200,7 +200,9 @@ class MallWorld(object):
         self.adversaries_position = np.random.choice(self.available_state, replace=False, size=self.num_advs)
 
         # randomly choose food court people
-        self.fooder = np.random.choice(self.food_court, replace=False, size=3)
+        self.fooder = []
+        if self.food_court:
+            self.fooder = np.random.choice(self.food_court, replace=False, size=3)
         
         # find stairs
         self.stairs = self.maze.flat_positions_containing('%')

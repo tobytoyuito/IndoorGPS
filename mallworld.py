@@ -119,6 +119,22 @@ def move_adversary(maze, position, action):
     
     return new_position,0
 
+
+def move_fooder(maze, position, action):
+    """
+    Return the new position of one fooder.
+    
+    Works with the positon and action as a (row, column) array.
+    """
+    
+    new_position = position + action
+    
+    # Compute collisions with walls, including implicit walls at the ends of the world.
+    if not maze.in_bounds_unflat(new_position) or maze.get_unflat(new_position) != '&':
+        return position,1
+    
+    return new_position,0
+
 #***********************************************************************
 
 
@@ -176,9 +192,15 @@ class MallWorld(object):
         
         # find all available position
         self.available_state = self.maze.flat_positions_containing('.')
+
+        # find all food court position
+        self.food_court = self.maze.flat_positions_containing('&')
                 
         # randomly choose position of adversary
         self.adversaries_position = np.random.choice(self.available_state, replace=False, size=self.num_advs)
+
+        # randomly choose food court people
+        self.fooder = np.random.choice(self.food_court, replace=False, size=3)
         
         # find stairs
         self.stairs = self.maze.flat_positions_containing('%')
@@ -258,6 +280,9 @@ class MallWorld(object):
         tmp = Maze(self.maze.topology)
         for adver_p in self.adversaries_position:
             tmp.flat_change(adver_p, 'a')
+
+        for food_p in self.fooder:
+            tmp.flat_change(food_p, 'a')
     
         return tmp
         
@@ -286,6 +311,16 @@ class MallWorld(object):
                                           self.maze.unflatten_index(self.adversaries_position[idx]),
                                           action)
             self.adversaries_position[idx] = self.maze.flatten_index(new_position[0])
+
+        # move fooder
+        for idx in xrange(3):
+            action_idx_a = self.random_state.choice(self.num_actions)
+            action = self.actions[action_idx_a]
+            new_position = move_fooder(self.add_adv_maze(),
+                                          self.maze.unflatten_index(self.fooder[idx]),
+                                          action)
+            self.fooder[idx] = self.maze.flatten_index(new_position[0])
+
             
         # move agent
         if self.action_error_prob and self.random_state.rand() < self.action_error_prob:
@@ -326,7 +361,17 @@ class MallWorld(object):
                     action_idx_a = self.random_state.choice(self.num_actions)
                     action = self.actions[action_idx_a]
                     self.adversary_actions[idx] = action
-                          
+
+        # move fooder
+        for idx in xrange(3):
+            action_idx_a = self.random_state.choice(self.num_actions)
+            action = self.actions[action_idx_a]
+            new_position = move_fooder(self.add_adv_maze(),
+                                          self.maze.unflatten_index(self.fooder[idx]),
+                                          action)
+            self.fooder[idx] = self.maze.flatten_index(new_position[0])
+
+        # move agent                  
         for idx in xrange(self.num_advs):
             action = self.adversary_actions[idx]
             
@@ -493,9 +538,9 @@ class MallWorld(object):
             [
             '#########',
             '#%.....%#',
-            '#..######',
-            '#..#....#',
-            '#..#....#',
+            '#..#&&&&#',
+            '#..#&&&&#',
+            '#..#&&&&#',
             '#.......#',
             '#####...#',
             '#%.....%#',
